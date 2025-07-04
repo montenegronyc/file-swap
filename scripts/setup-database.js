@@ -83,31 +83,4 @@ async function setupDatabase() {
 
     console.log('');
     console.log('🔧 Environment variables configured:');
-    console.log('- NEXT_PUBLIC_SUPABASE_URL: ✅');
-    console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY: ✅');
-    console.log('');
-    console.log('✨ Your Supabase database is ready to use!');
-
-  } catch (error) {
-    console.error('❌ Database setup failed:');
-    console.error(error.message);
-    
-    if (error.message.includes('SUPABASE_URL') || error.message.includes('SUPABASE_ANON_KEY')) {
-      console.log('');
-      console.log('💡 Setup instructions:');
-      console.log('1. Create a Supabase project at https://supabase.com');
-      console.log('2. Go to Settings > API in your Supabase dashboard');
-      console.log('3. Copy the Project URL and anon/public key');
-      console.log('4. Add them to your .env.local file:');
-      console.log('   NEXT_PUBLIC_SUPABASE_URL=your-project-url');
-      console.log('   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key');
-      console.log('5. Create the table using the SQL provided above');
-      console.log('6. Run this script again');
-    }
-    
-    process.exit(1);
-  }
-}
-
-// Run the setup function
-setupDatabase();
+    console.log('- NEXT_PUBLIC_SUPABAS

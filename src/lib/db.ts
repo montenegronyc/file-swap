@@ -104,23 +104,3 @@ export async function updateFileSwapFile2(
 }
 
 export async function getSwapStatus(swap: FileSwap): string {
-  if (new Date() > new Date(swap.expires_at)) {
-    return 'expired';
-  }
-  
-  if (!swap.file1_url) {
-    return 'waiting_for_file1';
-  }
-  
-  if (!swap.file2_url) {
-    return 'waiting_for_file2';
-  }
-  
-  return 'completed';
-}
-
-export async function initializeDatabase(): Promise<void> {
-  // For Supabase, the table should be created via the Supabase dashboard or SQL editor
-  // This function is kept for compatibility but doesn't create tables
-  console.log('Database initialization skipped - table should exist in Supabase');
-}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { formatFileSize, MAX_FILE_SIZE } from '@/lib/utils';
 
@@ -28,11 +28,7 @@ export default function SwapPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    fetchSwap();
-  }, [swapId]);
-
-  const fetchSwap = async () => {
+  const fetchSwap = useCallback(async () => {
     try {
       const response = await fetch(`/api/swap/${swapId}`);
       if (!response.ok) {
@@ -46,7 +42,11 @@ export default function SwapPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [swapId]);
+
+  useEffect(() => {
+    fetchSwap();
+  }, [fetchSwap]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];

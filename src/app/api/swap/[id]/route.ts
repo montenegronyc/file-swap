@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFileSwap, initializeDatabase, getSwapStatus } from '@/lib/db';
-import { isFileExpired } from '@/lib/utils';
 
 export async function GET(
   request: NextRequest,
