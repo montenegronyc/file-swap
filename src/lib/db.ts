@@ -124,3 +124,21 @@ export async function initializeDatabase(): Promise<void> {
   // This function is kept for compatibility but doesn't create tables
   console.log('Database initialization skipped - table should exist in Supabase');
 }
+
+// Additional helper methods that might be used elsewhere
+export async function createSwap(id: string): Promise<FileSwap> {
+  return createFileSwap(id);
+}
+
+export async function getSwap(id: string): Promise<FileSwap | null> {
+  return getFileSwap(id);
+}
+
+export async function deleteSwap(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('swaps')
+    .delete()
+    .eq('swap_id', id);
+  
+  return !error;
+}
