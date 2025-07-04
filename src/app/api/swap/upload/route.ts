@@ -6,11 +6,12 @@ import { join } from 'path';
 
 export async function POST(request: NextRequest) {
   try {
-    // Force development mode to bypass Supabase RLS issues
-    const isDevelopment = true; // Force development mode
-    const hasBlobCredentials = false; // Force local file storage
+    // Check environment and credentials (not placeholders)
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const hasBlobCredentials = !!(process.env.BLOB_READ_WRITE_TOKEN &&
+      !process.env.BLOB_READ_WRITE_TOKEN.includes('your-vercel-blob-token'));
     
-    console.log('🔧 Forced development mode - using local storage and in-memory DB (swap upload)');
+    console.log(`🔧 Second upload - Environment: ${isDevelopment ? 'development' : 'production'} | Blob: ${hasBlobCredentials}`);
 
     await initializeDatabase();
 

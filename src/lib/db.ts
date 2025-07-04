@@ -3,10 +3,13 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 
-// Force development mode to bypass Supabase RLS issues
-const hasSupabaseCredentials = false; // Temporarily force in-memory database
+// Check if we have proper Supabase credentials (not placeholders)
+const hasSupabaseCredentials = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && 
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project-id') &&
+  !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.includes('your-supabase-anon-key'));
 
-console.log('🔍 Forcing development mode - using file-backed storage');
+console.log(hasSupabaseCredentials ? '🔍 Using Supabase database' : '🔍 Using file-backed storage (development mode)');
 
 let supabase: ReturnType<typeof createClient> | null = null;
 

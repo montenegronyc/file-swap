@@ -6,12 +6,16 @@ import { join } from 'path';
 
 export async function POST(request: NextRequest) {
   try {
-    // Force development mode to bypass Supabase RLS issues
-    const isDevelopment = true; // Force development mode
-    const hasSupabaseCredentials = false; // Force in-memory database
-    const hasBlobCredentials = false; // Force local file storage
+    // Check environment and credentials (not placeholders)
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const hasSupabaseCredentials = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && 
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+      !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('your-project-id') &&
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.includes('your-supabase-anon-key'));
+    const hasBlobCredentials = !!(process.env.BLOB_READ_WRITE_TOKEN &&
+      !process.env.BLOB_READ_WRITE_TOKEN.includes('your-vercel-blob-token'));
     
-    console.log('🔧 Forced development mode - using local storage and in-memory DB');
+    console.log(`🔧 Environment: ${isDevelopment ? 'development' : 'production'} | Supabase: ${hasSupabaseCredentials} | Blob: ${hasBlobCredentials}`);
 
     if (!isDevelopment && (!hasSupabaseCredentials || !hasBlobCredentials)) {
       return NextResponse.json({ 
