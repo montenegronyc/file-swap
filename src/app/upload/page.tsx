@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatFileSize, MAX_FILE_SIZE } from '@/lib/utils';
 
@@ -8,19 +8,49 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
   const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const validateAndSetFile = (selectedFile: File) => {
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setError(`File size must be less than ${formatFileSize(MAX_FILE_SIZE)}`);
+      setFile(null);
+      return;
+    }
+    setFile(selectedFile);
+    setError(null);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      if (selectedFile.size > MAX_FILE_SIZE) {
-        setError(`File size must be less than ${formatFileSize(MAX_FILE_SIZE)}`);
-        setFile(null);
-        return;
-      }
-      setFile(selectedFile);
-      setError(null);
+      validateAndSetFile(selectedFile);
     }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      validateAndSetFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleClick = () => {
+    inputRef.current?.click();
   };
 
   const handleUpload = async () => {
@@ -30,6 +60,8 @@ export default function UploadPage() {
     setError(null);
 
     try {
+      console.log('Starting upload for file:', file.name, 'Size:', file.size);
+      
       const formData = new FormData();
       formData.append('file', file);
 
@@ -38,15 +70,20 @@ export default function UploadPage() {
         body: formData,
       });
 
+      console.log('Upload response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorText = await response.text();
+        console.error('Upload failed with response:', errorText);
+        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
+      console.log('Upload successful:', result);
       router.push(`/swap/${result.swapId}`);
     } catch (err) {
-      setError('Failed to upload file. Please try again.');
-      console.error(err);
+      console.error('Upload error:', err);
+      setError(`Failed to upload file: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setUploading(false);
     }
@@ -63,30 +100,36 @@ export default function UploadPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+          <div 
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer ${
+              dragActive 
+                ? 'border-blue-400 bg-blue-50' 
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            onClick={handleClick}
+          >
             <input
+              ref={inputRef}
               type="file"
-              id="file-upload"
               className="hidden"
               onChange={handleFileChange}
               disabled={uploading}
             />
-            <label
-              htmlFor="file-upload"
-              className="cursor-pointer block"
-            >
-              <div className="text-gray-600 mb-2">
-                <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                  <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <p className="text-sm text-gray-600">
-                Click to select a file or drag and drop
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Maximum file size: {formatFileSize(MAX_FILE_SIZE)}
-              </p>
-            </label>
+            <div className="text-gray-600 mb-2">
+              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <p className="text-sm text-gray-600">
+              {dragActive ? 'Drop your file here' : 'Click to select a file or drag and drop'}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Maximum file size: {formatFileSize(MAX_FILE_SIZE)}
+            </p>
           </div>
 
           {file && (
@@ -105,6 +148,18 @@ export default function UploadPage() {
                     {formatFileSize(file.size)}
                   </p>
                 </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setFile(null);
+                    setError(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
             </div>
           )}
