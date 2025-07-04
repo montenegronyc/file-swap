@@ -1,0 +1,40 @@
+
+> file-swap@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.3.5 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.18:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 754ms
+ ✓ Compiled /api/upload in 454ms
+Processing upload: package.json (772 bytes)
+Development mode: storing file locally
+File saved locally: /uploads/mny4a7eyjji0og5dpfd_package.json
+Using in-memory database for development...
+Using in-memory database for development
+Upload completed successfully for swap: mny4a7eyjji0og5dpfd
+ POST /api/upload 200 in 539ms
+Processing upload: package.json (772 bytes)
+Development mode: storing file locally
+File saved locally: /uploads/z7bchjni77yjlw8awm7vk_package.json
+Using in-memory database for development...
+Using in-memory database for development
+Upload completed successfully for swap: z7bchjni77yjlw8awm7vk
+ POST /api/upload 200 in 15ms
+Processing upload: package.json (772 bytes)
+Development mode: storing file locally
+File saved locally: /uploads/suuuqs9wnol8jgrua7sxth_package.json
+Using in-memory database for development...
+Using in-memory database for development
+Upload completed successfully for swap: suuuqs9wnol8jgrua7sxth
+ POST /api/upload 200 in 15ms
+ ✓ Compiled /api/swap/[id] in 158ms
+Using in-memory database for development
+ GET /api/swap/suuuqs9wnol8jgrua7sxth 200 in 362ms
+ ○ Compiling /swap/[id] ...
+ ✓ Compiled /swap/[id] in 794ms
+ GET /swap/suuuqs9wnol8jgrua7sxth 200 in 1060ms
+[?25h

@@ -60,31 +60,54 @@ export default function UploadPage() {
     setError(null);
 
     try {
-      console.log('Starting upload for file:', file.name, 'Size:', file.size);
+      console.log('🚀 Starting upload for file:', file.name, 'Size:', file.size);
       
       const formData = new FormData();
       formData.append('file', file);
 
+      console.log('📡 Making fetch request to /api/upload');
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
 
-      console.log('Upload response status:', response.status);
+      console.log('📥 Upload response received');
+      console.log('   Status:', response.status);
+      console.log('   Status Text:', response.statusText);
+      console.log('   Headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Upload failed with response:', errorText);
-        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+        console.error('❌ Upload failed with response body:', errorText);
+        throw new Error(`Upload failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
-      const result = await response.json();
-      console.log('Upload successful:', result);
+      const responseText = await response.text();
+      console.log('📄 Raw response text:', responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+        console.log('✅ Parsed JSON result:', result);
+      } catch (parseError) {
+        console.error('❌ Failed to parse JSON response:', parseError);
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+
+      console.log('🔄 Navigating to swap page:', `/swap/${result.swapId}`);
       router.push(`/swap/${result.swapId}`);
     } catch (err) {
-      console.error('Upload error:', err);
-      setError(`Failed to upload file: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      console.error('💥 Upload error caught:', err);
+      console.error('   Error type:', typeof err);
+      console.error('   Error constructor:', err?.constructor?.name);
+      
+      if (err instanceof TypeError && err.message.includes('fetch')) {
+        setError('Network error: Unable to connect to server. Please check your connection.');
+      } else {
+        setError(`Failed to upload file: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
     } finally {
+      console.log('🏁 Upload process finished');
       setUploading(false);
     }
   };
