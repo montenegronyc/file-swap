@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { formatFileSize, MAX_FILE_SIZE } from '@/lib/utils';
 
 interface FileSwap {
-  id: string;
+  swap_id: string;
   created_at: string;
   expires_at: string;
   file1_url?: string;

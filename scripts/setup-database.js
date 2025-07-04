@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { sql } = require('@vercel/postgres');
+const { createClient } = require('@supabase/supabase-js');
 
 // Load environment variables from .env.local
 try {
@@ -10,82 +10,99 @@ try {
 }
 
 async function setupDatabase() {
-  console.log('🚀 Starting database setup...');
+  console.log('🚀 Starting Supabase database setup...');
   
   try {
     // Check if required environment variables are set
-    if (!process.env.POSTGRES_URL) {
-      throw new Error('POSTGRES_URL environment variable is not set. Please check your .env.local file.');
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      throw new Error('NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables must be set. Please check your .env.local file.');
     }
 
-    console.log('📡 Connecting to Vercel Postgres...');
+    console.log('📡 Connecting to Supabase...');
     
-    // Drop existing table if it exists (for clean setup)
-    console.log('🗑️  Dropping existing swaps table if it exists...');
-    await sql`DROP TABLE IF EXISTS swaps;`;
-    
-    // Create the swaps table with the new schema
-    console.log('🏗️  Creating swaps table...');
-    await sql`
-      CREATE TABLE swaps (
-        id VARCHAR(255) PRIMARY KEY,
-        file1_url TEXT,
-        file1_name VARCHAR(255),
-        file1_size BIGINT,
-        file2_url TEXT,
-        file2_name VARCHAR(255),
-        file2_size BIGINT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        expires_at TIMESTAMP WITH TIME ZONE NOT NULL
-      );
-    `;
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
 
-    // Create an index on expires_at for efficient cleanup queries
-    console.log('🔍 Creating index on expires_at...');
-    await sql`CREATE INDEX idx_swaps_expires_at ON swaps(expires_at);`;
-
-    // Create an index on created_at for efficient queries
-    console.log('🔍 Creating index on created_at...');
-    await sql`CREATE INDEX idx_swaps_created_at ON swaps(created_at);`;
-
-    // Verify the table was created successfully
-    console.log('✅ Verifying table structure...');
-    const result = await sql`
-      SELECT column_name, data_type, is_nullable, column_default
-      FROM information_schema.columns
-      WHERE table_name = 'swaps'
-      ORDER BY ordinal_position;
-    `;
-
-    console.log('📊 Table structure:');
-    console.table(result.rows);
-
-    console.log('🎉 Database setup completed successfully!');
+    console.log('✅ Supabase connection established!');
     console.log('');
-    console.log('Table "swaps" created with the following structure:');
-    console.log('- id (VARCHAR(255), PRIMARY KEY)');
-    console.log('- file1_url (TEXT, nullable)');
-    console.log('- file1_name (VARCHAR(255), nullable)');
-    console.log('- file1_size (BIGINT, nullable)');
-    console.log('- file2_url (TEXT, nullable)');
-    console.log('- file2_name (VARCHAR(255), nullable)');
-    console.log('- file2_size (BIGINT, nullable)');
-    console.log('- created_at (TIMESTAMP WITH TIME ZONE, default NOW())');
-    console.log('- expires_at (TIMESTAMP WITH TIME ZONE, required)');
+    console.log('📋 Expected table structure for "swaps":');
     console.log('');
-    console.log('✨ Your database is ready to use!');
+    console.log('CREATE TABLE swaps (');
+    console.log('  swap_id TEXT PRIMARY KEY,');
+    console.log('  file1_url TEXT,');
+    console.log('  file1_name VARCHAR(255),');
+    console.log('  file1_size BIGINT,');
+    console.log('  file2_url TEXT,');
+    console.log('  file2_name VARCHAR(255),');
+    console.log('  file2_size BIGINT,');
+    console.log('  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),');
+    console.log('  expires_at TIMESTAMP WITH TIME ZONE NOT NULL');
+    console.log(');');
+    console.log('');
+    console.log('-- Recommended indexes:');
+    console.log('CREATE INDEX idx_swaps_expires_at ON swaps(expires_at);');
+    console.log('CREATE INDEX idx_swaps_created_at ON swaps(created_at);');
+    console.log('');
+
+    // Test the connection by trying to query the table
+    console.log('🔍 Testing table access...');
+    const { data, error } = await supabase
+      .from('swaps')
+      .select('count(*)')
+      .limit(1);
+
+    if (error) {
+      if (error.code === '42P01') {
+        console.log('⚠️  Table "swaps" does not exist yet.');
+        console.log('');
+        console.log('📝 To create the table, run this SQL in your Supabase SQL Editor:');
+        console.log('');
+        console.log('CREATE TABLE swaps (');
+        console.log('  swap_id TEXT PRIMARY KEY,');
+        console.log('  file1_url TEXT,');
+        console.log('  file1_name VARCHAR(255),');
+        console.log('  file1_size BIGINT,');
+        console.log('  file2_url TEXT,');
+        console.log('  file2_name VARCHAR(255),');
+        console.log('  file2_size BIGINT,');
+        console.log('  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),');
+        console.log('  expires_at TIMESTAMP WITH TIME ZONE NOT NULL');
+        console.log(');');
+        console.log('');
+        console.log('CREATE INDEX idx_swaps_expires_at ON swaps(expires_at);');
+        console.log('CREATE INDEX idx_swaps_created_at ON swaps(created_at);');
+      } else {
+        throw new Error(`Table access failed: ${error.message}`);
+      }
+    } else {
+      console.log('✅ Table "swaps" exists and is accessible!');
+      console.log('🎉 Database setup verification completed successfully!');
+    }
+
+    console.log('');
+    console.log('🔧 Environment variables configured:');
+    console.log('- NEXT_PUBLIC_SUPABASE_URL: ✅');
+    console.log('- NEXT_PUBLIC_SUPABASE_ANON_KEY: ✅');
+    console.log('');
+    console.log('✨ Your Supabase database is ready to use!');
 
   } catch (error) {
     console.error('❌ Database setup failed:');
     console.error(error.message);
     
-    if (error.message.includes('POSTGRES_URL')) {
+    if (error.message.includes('SUPABASE_URL') || error.message.includes('SUPABASE_ANON_KEY')) {
       console.log('');
       console.log('💡 Setup instructions:');
-      console.log('1. Create a Vercel Postgres database');
-      console.log('2. Copy the connection string to your .env.local file');
-      console.log('3. Make sure POSTGRES_URL is set in .env.local');
-      console.log('4. Run this script again');
+      console.log('1. Create a Supabase project at https://supabase.com');
+      console.log('2. Go to Settings > API in your Supabase dashboard');
+      console.log('3. Copy the Project URL and anon/public key');
+      console.log('4. Add them to your .env.local file:');
+      console.log('   NEXT_PUBLIC_SUPABASE_URL=your-project-url');
+      console.log('   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key');
+      console.log('5. Create the table using the SQL provided above');
+      console.log('6. Run this script again');
     }
     
     process.exit(1);

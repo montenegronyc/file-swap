@@ -1,9 +1,14 @@
-import { sql } from '@vercel/postgres';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export interface FileSwap {
-  id: string;
-  created_at: Date;
-  expires_at: Date;
+  swap_id: string;
+  created_at: string;
+  expires_at: string;
   file1_url?: string;
   file1_name?: string;
   file1_size?: number;
@@ -12,62 +17,90 @@ export interface FileSwap {
   file2_size?: number;
 }
 
-export async function createFileSwap(id: string): Promise<FileSwap> {
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+export async function createFileSwap(swapId: string): Promise<FileSwap> {
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   
-  const result = await sql`
-    INSERT INTO swaps (id, created_at, expires_at)
-    VALUES (${id}, NOW(), ${expiresAt.toISOString()})
-    RETURNING *
-  `;
+  const { data, error } = await supabase
+    .from('swaps')
+    .insert([
+      {
+        swap_id: swapId,
+        expires_at: expiresAt
+      }
+    ])
+    .select()
+    .single();
   
-  return result.rows[0] as FileSwap;
+  if (error) {
+    throw new Error(`Failed to create file swap: ${error.message}`);
+  }
+  
+  return data as FileSwap;
 }
 
-export async function getFileSwap(id: string): Promise<FileSwap | null> {
-  const result = await sql`
-    SELECT * FROM swaps WHERE id = ${id}
-  `;
+export async function getFileSwap(swapId: string): Promise<FileSwap | null> {
+  const { data, error } = await supabase
+    .from('swaps')
+    .select('*')
+    .eq('swap_id', swapId)
+    .single();
   
-  return result.rows.length > 0 ? result.rows[0] as FileSwap : null;
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null; // No rows found
+    }
+    throw new Error(`Failed to get file swap: ${error.message}`);
+  }
+  
+  return data as FileSwap;
 }
 
 export async function updateFileSwapFile1(
-  id: string,
+  swapId: string,
   fileUrl: string,
   filename: string,
   fileSize: number
 ): Promise<FileSwap | null> {
-  const result = await sql`
-    UPDATE swaps 
-    SET 
-      file1_url = ${fileUrl},
-      file1_name = ${filename},
-      file1_size = ${fileSize}
-    WHERE id = ${id}
-    RETURNING *
-  `;
+  const { data, error } = await supabase
+    .from('swaps')
+    .update({
+      file1_url: fileUrl,
+      file1_name: filename,
+      file1_size: fileSize
+    })
+    .eq('swap_id', swapId)
+    .select()
+    .single();
   
-  return result.rows.length > 0 ? result.rows[0] as FileSwap : null;
+  if (error) {
+    throw new Error(`Failed to update file swap: ${error.message}`);
+  }
+  
+  return data as FileSwap;
 }
 
 export async function updateFileSwapFile2(
-  id: string,
+  swapId: string,
   fileUrl: string,
   filename: string,
   fileSize: number
 ): Promise<FileSwap | null> {
-  const result = await sql`
-    UPDATE swaps 
-    SET 
-      file2_url = ${fileUrl},
-      file2_name = ${filename},
-      file2_size = ${fileSize}
-    WHERE id = ${id}
-    RETURNING *
-  `;
+  const { data, error } = await supabase
+    .from('swaps')
+    .update({
+      file2_url: fileUrl,
+      file2_name: filename,
+      file2_size: fileSize
+    })
+    .eq('swap_id', swapId)
+    .select()
+    .single();
   
-  return result.rows.length > 0 ? result.rows[0] as FileSwap : null;
+  if (error) {
+    throw new Error(`Failed to update file swap: ${error.message}`);
+  }
+  
+  return data as FileSwap;
 }
 
 export async function getSwapStatus(swap: FileSwap): string {
@@ -87,17 +120,7 @@ export async function getSwapStatus(swap: FileSwap): string {
 }
 
 export async function initializeDatabase(): Promise<void> {
-  await sql`
-    CREATE TABLE IF NOT EXISTS swaps (
-      id VARCHAR(255) PRIMARY KEY,
-      file1_url TEXT,
-      file1_name VARCHAR(255),
-      file1_size BIGINT,
-      file2_url TEXT,
-      file2_name VARCHAR(255),
-      file2_size BIGINT,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      expires_at TIMESTAMP WITH TIME ZONE NOT NULL
-    )
-  `;
+  // For Supabase, the table should be created via the Supabase dashboard or SQL editor
+  // This function is kept for compatibility but doesn't create tables
+  console.log('Database initialization skipped - table should exist in Supabase');
 }
