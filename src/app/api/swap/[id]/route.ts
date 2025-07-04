@@ -3,12 +3,13 @@ import { getFileSwap, initializeDatabase, getSwapStatus } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await initializeDatabase();
     
-    const swap = await getFileSwap(params.id);
+    const { id } = await params;
+    const swap = await getFileSwap(id);
     
     if (!swap) {
       return NextResponse.json({ error: 'Swap not found' }, { status: 404 });
